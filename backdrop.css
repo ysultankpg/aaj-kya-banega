@@ -1,0 +1,36 @@
+/* ============================================================
+   Aaj kya banega? — decorative background layer
+   Three blurred colour blobs plus the tiling food line-art.
+   Purely decorative: every element here is aria-hidden.
+   ============================================================ */
+
+.blob{
+  position:fixed;border-radius:50%;filter:blur(95px);
+  opacity:.42;pointer-events:none;z-index:0;
+}
+.blob-a{width:44vw;height:44vw;top:-14vw;right:-12vw;
+  background:radial-gradient(circle,var(--leaf),transparent 68%)}
+.blob-b{width:40vw;height:40vw;bottom:-16vw;left:-12vw;
+  background:radial-gradient(circle,var(--aubergine),transparent 68%)}
+.blob-c{width:30vw;height:30vw;top:38vh;left:44vw;opacity:.28;
+  background:radial-gradient(circle,var(--turmeric),transparent 70%)}
+
+/* Tiling line-art of veg, meat and fish — above the blobs, below all
+   content. Only opacity and filter change between themes. */
+.foodprint{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:url("./food-outlines.svg") repeat 0 0;
+  background-size:340px 340px;
+  opacity:.13;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .foodprint{
+    opacity:.18;filter:invert(1) hue-rotate(180deg)}
+}
+:root[data-theme="dark"] .foodprint{
+  opacity:.18;filter:invert(1) hue-rotate(180deg)}
+
+@media (max-width:560px){
+  .foodprint{background-size:260px 260px;opacity:.1}
+  .blob-c{display:none}
+}

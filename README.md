@@ -23,7 +23,8 @@ Then visit <http://localhost:8000>.
 | File | Role |
 |---|---|
 | `index.html` | Markup — header, chat log, composer |
-| `styles.css` | Palette, theming, chat bubbles, background art |
+| `styles.css` | Palette, theming, chat bubbles |
+| `backdrop.css` | Blurred blobs and the food line-art layer |
 | `recipe.css` | Recipe card and results grid |
 | `totop.css` | Back-to-top control |
 | `food-outlines.svg` | Tiling line-art of veg, meat and fish |
