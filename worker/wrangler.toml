@@ -1,0 +1,11 @@
+# Cloudflare Worker config for the Spoonacular proxy.
+# The API key is NOT here — it is a secret, set with:
+#   wrangler secret put SPOONACULAR_KEY
+name = "aaj-kya-banega-api"
+main = "src/worker.js"
+compatibility_date = "2026-09-25"
+
+# No KV, no D1, no bindings. The Worker is stateless; the only storage
+# it touches is Cloudflare's edge cache, which needs no declaration.
+[observability]
+enabled = true

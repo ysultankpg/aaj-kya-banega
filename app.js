@@ -68,6 +68,17 @@
      a grid of eight dishes must never be introduced as "the recipe
      for X". 'matches' and 'fallback' exist for exactly that.      */
   function introFor(intent, title) {
+    // 'wider' / 'widerarea' mean the answer came from the large index
+    // rather than the curated one. Worth saying: those recipes link out
+    // to their original author and have no video.
+    if (intent.kind === 'wider') {
+      return 'Not in my curated set, so I searched the wider index for ' +
+             intent.label + ':';
+    }
+    if (intent.kind === 'widerarea') {
+      return 'My curated set is thin on ' + intent.adj +
+             ' food, so here is ' + intent.label + ' from the wider index:';
+    }
     if (intent.kind === 'closest') {
       return 'No exact match for ' + intent.label + ', but searching ' +
              intent.used + ' turns this up:';
@@ -150,10 +161,11 @@
 
         // Be specific about WHY nothing came back. An empty cuisine is a
         // gap in the collection, not a misunderstood question.
+        var wide = window.SourceSpoon && window.SourceSpoon.enabled();
         if (res.intent && (res.intent.kind === 'area' || res.intent.kind === 'areacat')) {
-          UI.bubble('bot', 'The collection has no ' + res.intent.adj +
-            ' dishes yet — it is a curated set, not exhaustive. Try another cuisine, ' +
-            'or name a dish directly.');
+          UI.bubble('bot', 'I have no ' + res.intent.adj + ' dishes' +
+            (wide ? ' in either index' : ' yet') +
+            '. Try another cuisine, or name a dish directly.');
           return;
         }
         UI.bubble('bot',

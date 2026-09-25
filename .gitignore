@@ -1,2 +1,9 @@
 # GitHub Pages serves this repo as-is; no Jekyll processing needed.
 .DS_Store
+
+# Wrangler's local secret file — this is where the Spoonacular key would
+# land if you ever run the Worker locally. It must never be committed.
+.dev.vars
+worker/.dev.vars
+worker/.wrangler/
+worker/node_modules/
