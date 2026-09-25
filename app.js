@@ -13,8 +13,32 @@
   var sendBtn = document.getElementById('sendBtn');
   var themeBtn = document.getElementById('themeBtn');
   var themeIcon = document.getElementById('themeIcon');
+  var toTopBtn = document.getElementById('toTopBtn');
 
   var busy = false;
+
+  /* --- Back to top -----------------------------------------
+     Shown only once there is a meaningful amount to scroll back
+     over. While hidden the button is visibility:hidden, so it is
+     also removed from the tab order to avoid a focus trap on an
+     invisible control.                                        */
+  function syncToTop() {
+    var show = window.scrollY > 260;
+    toTopBtn.classList.toggle('show', show);
+    if (show) {
+      toTopBtn.removeAttribute('tabindex');
+    } else {
+      toTopBtn.setAttribute('tabindex', '-1');
+    }
+  }
+
+  toTopBtn.setAttribute('tabindex', '-1');
+  window.addEventListener('scroll', syncToTop, { passive: true });
+  window.addEventListener('resize', syncToTop);
+
+  toTopBtn.addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 
   /* --- Theme toggle ----------------------------------------
      Persisted in localStorage; falls back to the OS setting

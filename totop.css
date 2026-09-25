@@ -1,0 +1,48 @@
+/* ============================================================
+   Aaj kya banega? — back-to-top control
+   Sits just above the composer so it never covers the input.
+   Hidden until the page is scrolled; see app.js.
+   ============================================================ */
+
+.totop-wrap{
+  position:sticky;bottom:78px;z-index:2;
+  display:flex;justify-content:center;
+  height:0;                 /* takes no layout space when idle */
+  pointer-events:none;      /* re-enabled on the button itself */
+}
+
+.totop{
+  position:relative;top:-8px;
+  display:inline-flex;align-items:center;gap:7px;
+  font:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  padding:9px 16px;border-radius:999px;color:#fff;
+  border:1px solid rgba(255,255,255,.28);
+  background:linear-gradient(135deg,var(--basil),var(--blueberry) 55%,var(--aubergine));
+  box-shadow:var(--shadow-lg);
+  pointer-events:auto;
+
+  /* Hidden state: faded, nudged down, and not focusable */
+  opacity:0;
+  transform:translateY(14px) scale(.94);
+  visibility:hidden;
+  transition:opacity .22s ease, transform .22s ease, visibility .22s;
+}
+
+/* Revealed once app.js sees enough scroll distance */
+.totop.show{
+  opacity:1;
+  transform:translateY(0) scale(1);
+  visibility:visible;
+}
+
+.totop:hover{transform:translateY(-2px) scale(1.04)}
+/* Focus ring: aubergine clears 3:1 on both the light and dark page
+   backgrounds. Turmeric would not — it sits at 1.9:1 on cream. */
+.totop:focus-visible{outline:2px solid var(--aubergine);outline-offset:3px}
+
+.totop-arrow{font-size:14px;line-height:1}
+
+@media (max-width:560px){
+  .totop-wrap{bottom:74px}
+  .totop{font-size:12.5px;padding:8px 14px}
+}

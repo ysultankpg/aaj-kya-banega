@@ -5,16 +5,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Aaj kya banega? — ask for any recipe in plain language." />
-  <meta name="theme-color" content="#FF6B35" />
+  <meta name="theme-color" content="#2F9E5F" />
   <title>Aaj kya banega? 😉 · Ask for any recipe</title>
   <link rel="preconnect" href="https://www.themealdb.com" />
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./recipe.css" />
+  <link rel="stylesheet" href="./totop.css" />
 </head>
 <body>
   <!-- Decorative blurred blobs + tiling food line-art give the page depth -->
   <div class="blob blob-a" aria-hidden="true"></div>
   <div class="blob blob-b" aria-hidden="true"></div>
+  <div class="blob blob-c" aria-hidden="true"></div>
   <div class="foodprint" aria-hidden="true"></div>
 
   <div class="shell">
@@ -52,6 +54,14 @@
         </div>
       </section>
     </main>
+
+    <!-- ── Back to top: revealed by app.js once the page scrolls ──── -->
+    <div class="totop-wrap">
+      <button id="toTopBtn" class="totop" type="button" aria-label="Scroll back to the top of the conversation">
+        <span class="totop-arrow" aria-hidden="true">↑</span>
+        <span>Back to top</span>
+      </button>
+    </div>
 
     <!-- ── Composer: the question box ─────────────────────────────── -->
     <form id="composer" class="composer" autocomplete="off">

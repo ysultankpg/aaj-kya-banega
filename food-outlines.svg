@@ -2,7 +2,7 @@
 <!-- Aaj kya banega? — decorative tiling line-art of veg, meat and fish.
      Outlines only: no fills. Tiles seamlessly as a CSS background. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 460" width="460" height="460">
-  <g fill="none" stroke="#b5714a" stroke-width="2"
+  <g fill="none" stroke="#3f8f63" stroke-width="2"
      stroke-linecap="round" stroke-linejoin="round">
 
     <!-- Carrot, top-left -->
