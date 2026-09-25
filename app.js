@@ -68,6 +68,15 @@
      a grid of eight dishes must never be introduced as "the recipe
      for X". 'matches' and 'fallback' exist for exactly that.      */
   function introFor(intent, title) {
+    if (intent.kind === 'closest') {
+      return 'No exact match for ' + intent.label + ', but searching ' +
+             intent.used + ' turns this up:';
+    }
+    if (intent.kind === 'nooverlap') {
+      return 'Nothing in the collection is both ' + intent.adj + ' and ' +
+             intent.cat.toLowerCase() + '. Here is the ' + intent.adj +
+             ' selection instead:';
+    }
     if (intent.kind === 'fallback') {
       return 'I could not find a dish called ' + intent.label +
              '. Here is what I have using ' + intent.used + ' — tap one for the method:';
@@ -80,6 +89,7 @@
       name: ['Found it. Here is how to make ' + title + '.',
              'Here is the full recipe for ' + title + '.'],
       area: ['Some ' + title + ' worth cooking. Pick one for the full recipe:'],
+      areacat: ['Here is the ' + title + ' I have. Tap one for the method:'],
       category: ['Here are a few ' + title + '. Tap one for the method:'],
       ingredient: ['These use what you have. Tap one for the full recipe:']
     };
@@ -138,8 +148,16 @@
           return;
         }
 
+        // Be specific about WHY nothing came back. An empty cuisine is a
+        // gap in the collection, not a misunderstood question.
+        if (res.intent && (res.intent.kind === 'area' || res.intent.kind === 'areacat')) {
+          UI.bubble('bot', 'The collection has no ' + res.intent.adj +
+            ' dishes yet — it is a curated set, not exhaustive. Try another cuisine, ' +
+            'or name a dish directly.');
+          return;
+        }
         UI.bubble('bot',
-          'I could not find anything for that. Try a dish name like butter chicken, ' +
+          'I could not find anything for that. Try a dish name like lamb biryani, ' +
           'an ingredient like paneer, or a cuisine like Thai.');
       })
       .catch(function (err) {

@@ -66,7 +66,7 @@
     <!-- ── Composer: the question box ─────────────────────────────── -->
     <form id="composer" class="composer" autocomplete="off">
       <input id="input" class="composer-input" type="text" required
-             placeholder="e.g. how do I make butter chicken?"
+             placeholder="e.g. how do I make lamb biryani?"
              aria-label="Ask for a recipe" />
       <button id="sendBtn" class="send-btn" type="submit" aria-label="Send question">
         <span aria-hidden="true">↑</span>
@@ -75,7 +75,8 @@
     <p class="footnote">Recipes from TheMealDB · no account, no tracking</p>
   </div>
 
-  <!-- Modules load in dependency order: api → render → app -->
+  <!-- Modules load in dependency order: intent → api → render → app -->
+  <script src="./intent.js"></script>
   <script src="./api.js"></script>
   <script src="./render.js"></script>
   <script src="./app.js"></script>

@@ -1,116 +1,111 @@
 /* ============================================================
    Aaj kya banega? — data layer
    Talks to TheMealDB (free, keyless) and normalises the results.
-   Exposes a single global: window.RecipeAPI
+   Intent parsing lives in intent.js.
+   Exposes: window.RecipeAPI = { ask, byId, parseIntent }
    ============================================================ */
 (function () {
   'use strict';
 
   var BASE = 'https://www.themealdb.com/api/json/v1/1/';
 
-  /* Small fetch wrapper: returns parsed JSON, throws on HTTP error. */
   function get(path) {
-    return fetch(BASE + path)
+    return fetch(BASE + path).then(function (r) {
+      if (!r.ok) throw new Error('Recipe service returned ' + r.status);
+      return r.json();
+    });
+  }
+
+  function brief(m) {
+    return { id: m.idMeal, title: m.strMeal, image: m.strMealThumb };
+  }
+
+  function search(term) {
+    return get('search.php?s=' + encodeURIComponent(term))
+      .then(function (d) { return d.meals || []; });
+  }
+
+  function filter(key, value) {
+    return get('filter.php?' + key + '=' + encodeURIComponent(value))
+      .then(function (d) { return d.meals || []; });
+  }
+
+  /* ---------------------------------------------------------
+     Name search ladder.
+     TheMealDB matches a plain substring of the TITLE, so a
+     two-word query like "chicken biryani" finds nothing even
+     though "Lamb Biryani" is in the collection. Retry with the
+     head noun (usually the last word) before giving up and
+     widening to an ingredient search.
+     --------------------------------------------------------- */
+  function candidates(phrase) {
+    var words = phrase.split(' ').filter(function (w) { return w.length > 2; });
+    if (words.length < 2) return [];
+    var last = words[words.length - 1];
+    var rest = words.slice(0, -1).sort(function (a, b) { return b.length - a.length; });
+    return [last].concat(rest);
+  }
+
+  function byName(intent) {
+    return search(intent.value).then(function (meals) {
+      if (meals.length === 1) {
+        return { type: 'recipe', recipe: shape(meals[0]), intent: intent };
+      }
+      if (meals.length > 1) {
+        return { type: 'choices', items: meals.slice(0, 8).map(brief),
+                 intent: { kind: 'matches', label: intent.value } };
+      }
+      return climb(candidates(intent.value), 0, intent);
+    });
+  }
+
+  /* Walk the candidate terms one at a time; first hit wins. */
+  function climb(terms, i, intent) {
+    if (i >= terms.length) return widen(intent);
+    return search(terms[i]).then(function (meals) {
+      if (!meals.length) return climb(terms, i + 1, intent);
+      if (meals.length === 1) {
+        return { type: 'recipe', recipe: shape(meals[0]),
+                 intent: { kind: 'closest', label: intent.value, used: terms[i] } };
+      }
+      return { type: 'choices', items: meals.slice(0, 8).map(brief),
+               intent: { kind: 'closest', label: intent.value, used: terms[i] } };
+    });
+  }
+
+  /* Last resort: treat the first word as an ingredient. */
+  function widen(intent) {
+    var word = intent.value.split(' ')[0];
+    return filter('i', word).then(function (meals) {
+      if (!meals.length) return { type: 'none', intent: intent };
+      return { type: 'choices', items: meals.slice(0, 8).map(brief),
+               intent: { kind: 'fallback', label: intent.value, used: word } };
+    });
+  }
+
+  /* Cuisine + category, e.g. "indian breakfast". filter.php takes only
+     one dimension at a time, so intersect two calls locally. */
+  function byAreaCat(intent) {
+    return Promise.all([filter('a', intent.value), filter('c', intent.cat)])
       .then(function (r) {
-        if (!r.ok) throw new Error('Recipe service returned ' + r.status);
-        return r.json();
+        var ids = {};
+        r[1].forEach(function (m) { ids[m.idMeal] = true; });
+        var both = r[0].filter(function (m) { return ids[m.idMeal]; });
+        if (both.length) {
+          return { type: 'choices', items: both.slice(0, 8).map(brief), intent: intent };
+        }
+        // No overlap — offer the cuisine on its own rather than nothing.
+        if (r[0].length) {
+          return { type: 'choices', items: r[0].slice(0, 8).map(brief),
+                   intent: { kind: 'nooverlap', adj: intent.adj, cat: intent.cat,
+                             label: intent.label } };
+        }
+        return { type: 'none', intent: intent };
       });
   }
 
   /* ---------------------------------------------------------
-     Intent parsing.
-     TheMealDB has separate endpoints for name / ingredient /
-     cuisine / category, so we decide which one the question
-     wants before calling anything.
-     --------------------------------------------------------- */
-
-  // Cuisines TheMealDB indexes (its "area" dimension).
-  var AREAS = ['American','British','Canadian','Chinese','Croatian','Dutch',
-    'Egyptian','Filipino','French','Greek','Indian','Irish','Italian','Jamaican',
-    'Japanese','Kenyan','Malaysian','Mexican','Moroccan','Polish','Portuguese',
-    'Russian','Spanish','Thai','Tunisian','Turkish','Ukrainian','Vietnamese'];
-
-  // Loose words people actually type, mapped to the canonical area.
-  var AREA_ALIASES = {
-    thai:'Thai', indian:'Indian', desi:'Indian', italian:'Italian',
-    chinese:'Chinese', japanese:'Japanese', mexican:'Mexican', greek:'Greek',
-    french:'French', spanish:'Spanish', turkish:'Turkish', moroccan:'Moroccan',
-    british:'British', american:'American', vietnamese:'Vietnamese',
-    malaysian:'Malaysian', filipino:'Filipino', egyptian:'Egyptian',
-    jamaican:'Jamaican', russian:'Russian', polish:'Polish', irish:'Irish',
-    canadian:'Canadian', portuguese:'Portuguese', croatian:'Croatian',
-    dutch:'Dutch', kenyan:'Kenyan', tunisian:'Tunisian', ukrainian:'Ukrainian'
-  };
-
-  // Category keywords → TheMealDB category.
-  var CATEGORIES = {
-    dessert:'Dessert', sweet:'Dessert', pudding:'Dessert', cake:'Dessert',
-    vegetarian:'Vegetarian', veggie:'Vegetarian', vegan:'Vegan',
-    seafood:'Seafood', fish:'Seafood', prawn:'Seafood',
-    chicken:'Chicken', beef:'Beef', pork:'Pork', lamb:'Lamb',
-    pasta:'Pasta', breakfast:'Breakfast', side:'Side', starter:'Starter',
-    appetizer:'Starter', appetiser:'Starter', goat:'Goat', miscellaneous:'Miscellaneous'
-  };
-
-  // Filler words stripped before we treat the remainder as a dish name.
-  var STOP = new RegExp(
-    '\\b(how|do|i|you|to|can|could|would|please|make|cook|prepare|a|an|the|' +
-    'recipe|recipes|for|of|me|give|show|find|get|want|need|some|any|dish|' +
-    'dishes|food|meal|is|whats|what|s|there|tell|about|with|using|use|up|' +
-    'got|have|ive|best|good|easy|quick|simple|step|steps|by|instructions)\\b',
-    'gi');
-
-  /* Reduce free text to comparable tokens. */
-  function normalise(text) {
-    return String(text || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
-  }
-
-  /* Decide what the user is asking for. Returns {kind, value, label}. */
-  function parseIntent(question) {
-    var q = normalise(question);
-    var words = q.split(/\s+/).filter(Boolean);
-
-    // 1. Explicit randomness.
-    if (/\b(surprise|random|anything|whatever|idea|inspire)\b/.test(q)) {
-      return { kind: 'random', value: null, label: 'something to surprise you' };
-    }
-
-    // 2. Cuisine mention ("show me a Thai dish").
-    for (var i = 0; i < words.length; i++) {
-      var a = AREA_ALIASES[words[i]];
-      if (a) return { kind: 'area', value: a, label: a + ' dishes' };
-    }
-
-    // 3. "I have X" / "what can I cook with X" → ingredient search.
-    var byIngredient = /\b(?:with|using|from|out of|i have|ive got|have got)\b/.test(q);
-
-    // 4. Category mention, but only when it is not the whole point of a
-    //    dish name (e.g. "chicken biryani" should search by name).
-    var catHit = null;
-    for (var j = 0; j < words.length; j++) {
-      if (CATEGORIES[words[j]]) { catHit = { word: words[j], cat: CATEGORIES[words[j]] }; break; }
-    }
-
-    // Strip filler to see what is actually left as a dish name.
-    var core = q.replace(STOP, ' ').replace(/\s+/g, ' ').trim();
-
-    if (byIngredient && core) {
-      return { kind: 'ingredient', value: core.split(' ')[0], label: 'recipes using ' + core };
-    }
-
-    // A single leftover word that is a known category → browse the category.
-    if (catHit && core.split(' ').length <= 1) {
-      return { kind: 'category', value: catHit.cat, label: catHit.cat.toLowerCase() + ' recipes' };
-    }
-
-    if (core) return { kind: 'name', value: core, label: core };
-
-    return { kind: 'random', value: null, label: 'something tasty' };
-  }
-
-  /* ---------------------------------------------------------
      Shaping TheMealDB's flat records into something usable.
-     Its ingredients arrive as strIngredient1..20 / strMeasure1..20.
      --------------------------------------------------------- */
   function shape(meal) {
     var ingredients = [];
@@ -120,13 +115,11 @@
       ingredients.push({ name: name, qty: (meal['strMeasure' + n] || '').trim() });
     }
 
-    // Split the single instructions blob into readable steps.
     var steps = String(meal.strInstructions || '')
       .split(/\r?\n+|(?<=\.)\s{2,}/)
       .map(function (s) { return s.replace(/^\s*(step\s*\d+[:.)]?|\d+[.)])\s*/i, '').trim(); })
       .filter(function (s) { return s.length > 2; });
 
-    // Nothing split cleanly? Fall back to sentence splitting.
     if (steps.length < 2) {
       steps = String(meal.strInstructions || '')
         .split(/(?<=[.!?])\s+(?=[A-Z])/)
@@ -148,13 +141,9 @@
     };
   }
 
-  /* ---------------------------------------------------------
-     Public entry point.
-     Resolves to either {type:'recipe', recipe} (one exact hit)
-     or {type:'choices', items} (a list to pick from).
-     --------------------------------------------------------- */
+  /* --- Public entry point ----------------------------------- */
   function ask(question) {
-    var intent = parseIntent(question);
+    var intent = window.RecipeIntent.parse(question);
 
     if (intent.kind === 'random') {
       return get('random.php').then(function (d) {
@@ -163,52 +152,16 @@
       });
     }
 
-    if (intent.kind === 'name') {
-      return get('search.php?s=' + encodeURIComponent(intent.value))
-        .then(function (d) {
-          if (d.meals && d.meals.length === 1) {
-            return { type: 'recipe', recipe: shape(d.meals[0]), intent: intent };
-          }
-          if (d.meals && d.meals.length > 1) {
-            // Several dishes match the name — present them as a choice, and
-            // relabel so the reply does not promise one specific recipe.
-            return {
-              type: 'choices',
-              items: d.meals.slice(0, 8).map(brief),
-              intent: { kind: 'matches', value: intent.value, label: intent.value }
-            };
-          }
-          // No name match — retry the first word as an ingredient. Relabel to
-          // 'fallback' so the UI says we widened the search instead of
-          // claiming to have found the exact dish.
-          var word = intent.value.split(' ')[0];
-          return get('filter.php?i=' + encodeURIComponent(word))
-            .then(function (f) {
-              if (!f.meals) return { type: 'none', intent: intent };
-              return {
-                type: 'choices',
-                items: f.meals.slice(0, 8).map(brief),
-                intent: { kind: 'fallback', value: word, label: intent.value, used: word }
-              };
-            });
-        });
-    }
+    if (intent.kind === 'name') return byName(intent);
+    if (intent.kind === 'areacat') return byAreaCat(intent);
 
-    // area / category / ingredient all use the filter endpoint.
     var key = intent.kind === 'area' ? 'a' : (intent.kind === 'category' ? 'c' : 'i');
-    return get('filter.php?' + key + '=' + encodeURIComponent(intent.value))
-      .then(function (d) {
-        if (!d.meals) return { type: 'none', intent: intent };
-        return { type: 'choices', items: d.meals.slice(0, 8).map(brief), intent: intent };
-      });
+    return filter(key, intent.value).then(function (meals) {
+      if (!meals.length) return { type: 'none', intent: intent };
+      return { type: 'choices', items: meals.slice(0, 8).map(brief), intent: intent };
+    });
   }
 
-  /* Trim a filter result down to what a tile needs. */
-  function brief(m) {
-    return { id: m.idMeal, title: m.strMeal, image: m.strMealThumb };
-  }
-
-  /* Fetch one recipe by its id (used when a tile is clicked). */
   function byId(id) {
     return get('lookup.php?i=' + encodeURIComponent(id)).then(function (d) {
       if (!d.meals) throw new Error('not found');
@@ -216,5 +169,5 @@
     });
   }
 
-  window.RecipeAPI = { ask: ask, byId: byId, parseIntent: parseIntent };
+  window.RecipeAPI = { ask: ask, byId: byId, parseIntent: window.RecipeIntent.parse };
 })();
