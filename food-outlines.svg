@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Aaj kya banega? — decorative tiling line-art of veg, meat and fish.
+     Outlines only: no fills. Tiles seamlessly as a CSS background. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 460" width="460" height="460">
+  <g fill="none" stroke="#b5714a" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round">
+
+    <!-- Carrot, top-left -->
+    <path d="M56 72 Q72 62 88 72 L72 142 Z"/>
+    <path d="M64 70 L58 50"/>
+    <path d="M72 68 L74 46"/>
+    <path d="M80 70 L88 52"/>
+    <path d="M64 92 L77 88"/>
+    <path d="M67 110 L79 106"/>
+
+    <!-- Fish, top-centre -->
+    <path d="M180 85 Q215 50 260 85 Q215 120 180 85 Z"/>
+    <path d="M180 85 L157 65 L161 85 L157 105 Z"/>
+    <path d="M232 62 Q226 85 232 108"/>
+    <circle cx="246" cy="78" r="3"/>
+
+    <!-- Chilli, top-right -->
+    <path d="M375 62 Q405 78 392 118 Q386 134 368 136 Q390 118 388 96 Q386 76 375 62 Z"/>
+    <path d="M375 62 L368 46"/>
+    <path d="M368 46 Q379 42 385 51"/>
+
+    <!-- Broccoli, mid-left -->
+    <circle cx="78" cy="215" r="16"/>
+    <circle cx="101" cy="223" r="13"/>
+    <circle cx="59" cy="229" r="12"/>
+    <path d="M73 240 L71 276"/>
+    <path d="M93 237 L97 273"/>
+    <path d="M71 276 Q84 286 97 273"/>
+
+    <!-- Drumstick, mid-centre: teardrop of meat tapering into a short bone -->
+    <path d="M232 194 Q258 200 258 224 Q258 244 240 250 Q222 256 212 244 Q204 234 210 222 Q216 206 232 194 Z"/>
+    <path d="M247 246 Q258 256 264 262"/>
+    <path d="M239 251 Q250 261 256 267"/>
+    <path d="M264 262 Q274 258 276 266 Q278 274 269 274"/>
+    <path d="M256 267 Q252 277 260 280 Q269 283 269 274"/>
+
+    <!-- Prawn, mid-right: curled body, segment lines, tail fan -->
+    <path d="M404 212 Q428 224 424 248 Q419 268 398 270 Q381 271 377 257"/>
+    <path d="M404 212 Q417 228 413 246 Q409 259 396 261 Q387 262 382 254"/>
+    <path d="M377 257 L356 249"/>
+    <path d="M377 257 L354 262"/>
+    <path d="M377 257 L359 273"/>
+    <path d="M425 234 L414 236"/>
+    <path d="M420 254 L410 251"/>
+    <path d="M406 266 L402 257"/>
+    <path d="M404 212 Q414 199 427 197"/>
+    <path d="M404 212 Q407 197 417 190"/>
+    <circle cx="410" cy="219" r="2.5"/>
+
+    <!-- Mushroom, bottom-left -->
+    <path d="M45 371 Q48 340 78 340 Q108 340 111 371 Z"/>
+    <path d="M66 371 L64 401 Q78 407 88 401 L86 371"/>
+
+    <!-- Herb leaf, bottom-centre -->
+    <path d="M210 381 Q230 330 266 335 Q262 373 210 381 Z"/>
+    <path d="M210 381 Q239 362 261 341"/>
+    <path d="M227 369 L229 354"/>
+    <path d="M243 360 L247 347"/>
+
+    <!-- Onion, bottom-right -->
+    <path d="M380 361 Q380 386 400 393 Q421 386 421 361 Q421 340 400 336 Q380 340 380 361 Z"/>
+    <path d="M400 336 L394 317"/>
+    <path d="M400 336 L400 319"/>
+    <path d="M400 336 L407 316"/>
+    <path d="M392 344 Q388 367 397 389"/>
+    <path d="M410 344 Q414 367 405 389"/>
+
+  </g>
+</svg>

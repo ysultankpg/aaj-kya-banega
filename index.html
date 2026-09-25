@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<!-- Aaj kya banega? — a conversational recipe finder. Pure client-side, no backend. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Aaj kya banega? — ask for any recipe in plain language." />
+  <meta name="theme-color" content="#FF6B35" />
+  <title>Aaj kya banega? 😉 · Ask for any recipe</title>
+  <link rel="preconnect" href="https://www.themealdb.com" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./recipe.css" />
+</head>
+<body>
+  <!-- Decorative blurred blobs + tiling food line-art give the page depth -->
+  <div class="blob blob-a" aria-hidden="true"></div>
+  <div class="blob blob-b" aria-hidden="true"></div>
+  <div class="foodprint" aria-hidden="true"></div>
+
+  <div class="shell">
+    <!-- ── Header: brand + theme toggle ───────────────────────────── -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">🍳</span>
+        <div class="brand-text">
+          <!-- The wink sits outside the gradient-clipped span: gradient text
+               is transparent, which would hide an emoji placed inside it. -->
+          <h1><span class="brand-name">Aaj kya banega?</span><span class="wink" aria-hidden="true">😉</span></h1>
+          <p>Ask for any recipe, in plain words.</p>
+        </div>
+      </div>
+      <button id="themeBtn" class="icon-btn" type="button"
+              aria-label="Switch between light and dark appearance">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </header>
+
+    <!-- ── Chat transcript: messages are injected here by render.js ── -->
+    <main id="chat" class="chat" role="log" aria-live="polite" aria-label="Conversation">
+      <!-- Empty state: greeting + example prompts -->
+      <section class="hero" id="hero">
+        <div class="hero-icon" aria-hidden="true">🥘</div>
+        <h2>Aaj kya banega? 😉</h2>
+        <p>Name a dish, an ingredient you need to use up, or a cuisine.
+           I will pull the full recipe — ingredients, steps and a video.</p>
+        <div class="chips" role="group" aria-label="Example questions">
+          <button class="chip" data-q="How do I make Chicken Handi?">🍛 Chicken Handi</button>
+          <button class="chip" data-q="What can I cook with paneer?">🧈 I have paneer</button>
+          <button class="chip" data-q="Show me a Thai dish">🇹🇭 Thai food</button>
+          <button class="chip" data-q="Give me a dessert recipe">🍰 Something sweet</button>
+          <button class="chip" data-q="Surprise me">🎲 Surprise me</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ── Composer: the question box ─────────────────────────────── -->
+    <form id="composer" class="composer" autocomplete="off">
+      <input id="input" class="composer-input" type="text" required
+             placeholder="e.g. how do I make butter chicken?"
+             aria-label="Ask for a recipe" />
+      <button id="sendBtn" class="send-btn" type="submit" aria-label="Send question">
+        <span aria-hidden="true">↑</span>
+      </button>
+    </form>
+    <p class="footnote">Recipes from TheMealDB · no account, no tracking</p>
+  </div>
+
+  <!-- Modules load in dependency order: api → render → app -->
+  <script src="./api.js"></script>
+  <script src="./render.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
