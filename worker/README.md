@@ -56,6 +56,25 @@ buys an attacker nothing but recipe searches.
 CORS is granted only to the origins listed in `ORIGINS` in
 `src/worker.js`. Edit that list if you host the page elsewhere.
 
+## Checking it works
+
+```sh
+curl https://<your-worker>.workers.dev/health
+curl "https://<your-worker>.workers.dev/search?q=biryani&n=2"
+```
+
+`/health` reports the key's length and shape — never the key itself. A real
+Spoonacular key is 32 hex characters:
+
+```json
+{"ok":true,"keyLength":32,"looksLikeSpoonacularKey":true,"hasWhitespace":false}
+```
+
+If `/search` returns `Spoonacular rejected the API key`, the secret is wrong,
+truncated or revoked. Re-run `wrangler secret put SPOONACULAR_KEY` — paste the
+key from the dashboard's **Profile → API Key**, not the account password, and
+watch for a trailing space.
+
 ## Quota
 
 Responses are cached at the edge for 24 hours, keyed on the client URL —

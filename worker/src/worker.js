@@ -133,6 +133,20 @@ export default {
       return fail(503, 'Proxy is not configured with an API key.', origin);
     }
 
+    /* /health reports the key's length and shape only — never the key.
+       Enough to diagnose a paste error (wrong length, stray whitespace)
+       without exposing the secret. Checked BEFORE route validation,
+       since it is not a Spoonacular passthrough. */
+    if (url.pathname === '/health') {
+      const k = env.SPOONACULAR_KEY;
+      return new Response(JSON.stringify({
+        ok: true,
+        keyLength: k.length,
+        looksLikeSpoonacularKey: /^[a-f0-9]{32}$/i.test(k),
+        hasWhitespace: /\s/.test(k)
+      }), { headers: Object.assign(cors(origin), { 'Cache-Control': 'no-store' }) });
+    }
+
     const upstream = upstreamFor(url, env.SPOONACULAR_KEY);
     if (!upstream) return fail(400, 'Unsupported route or parameters.', origin);
 
@@ -159,6 +173,13 @@ export default {
     /* 402 is Spoonacular's daily-quota signal. Surface it as itself so
        the client can fall back quietly instead of showing an error. */
     if (res.status === 402) return fail(402, 'Daily recipe quota reached.', origin);
+    /* 401/403 means the key is missing, wrong or revoked — a deployment
+       problem, not a user one. Say so explicitly: collapsing it into a
+       generic 502 makes a one-line fix look like an outage. */
+    if (res.status === 401 || res.status === 403) {
+      return fail(500, 'Spoonacular rejected the API key (HTTP ' + res.status +
+        '). Re-run: wrangler secret put SPOONACULAR_KEY', origin);
+    }
     if (!res.ok) return fail(502, 'Recipe index returned ' + res.status + '.', origin);
 
     const body = await res.text();

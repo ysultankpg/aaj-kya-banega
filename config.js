@@ -11,5 +11,5 @@
    browser; the Worker holds it.
    ============================================================ */
 window.RecipeConfig = {
-  proxy: ''
+  proxy: 'https://aaj-kya-banega-api.aajkyabanega.workers.dev'
 };

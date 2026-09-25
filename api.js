@@ -23,9 +23,9 @@
   }
 
   /* --- Dish by name ----------------------------------------
-     Order matters. A genuine Spoonacular match for "chicken
-     biryani" beats TheMealDB's near miss ("Lamb Biryani"), but
-     an exact TheMealDB hit beats both — it comes with a video. */
+     Order matters. A genuine Spoonacular match beats TheMealDB's
+     near miss, but an exact TheMealDB hit beats both — it comes
+     with a video. */
   function byName(intent) {
     return MDB.search(intent.value).then(function (meals) {
       if (meals.length === 1) {
@@ -49,17 +49,38 @@
     });
   }
 
-  /* Nothing exact anywhere — offer TheMealDB's closest, labelled
-     as the near miss it is. */
+  /* Nothing exact in either index. Spoonacular's search ANDs the
+     query words against the title, so "chicken biryani" scores 0
+     while "biryani" finds four — the same head-noun trick that
+     TheMealDB needs. Verified against the live API.
+
+     Tried in this order because the cost differs: TheMealDB's
+     ladder is free and unmetered, so it goes first, and the wider
+     index is only asked when that comes back empty. Both are near
+     misses, so both get labelled as such. */
   function nearMiss(intent) {
     return MDB.nearest(intent.value).then(function (near) {
-      if (!near) return { type: 'none', intent: intent };
-      if (near.how === 'closest' && near.meals.length === 1) {
-        return { type: 'recipe', recipe: MDB.shape(near.meals[0]),
-                 intent: { kind: 'closest', label: intent.value, used: near.used } };
+      if (near) {
+        if (near.how === 'closest' && near.meals.length === 1) {
+          return { type: 'recipe', recipe: MDB.shape(near.meals[0]),
+                   intent: { kind: 'closest', label: intent.value, used: near.used } };
+        }
+        return pick(near.meals.map(MDB.brief),
+                    { kind: near.how, label: intent.value, used: near.used });
       }
-      return pick(near.meals.map(MDB.brief),
-                  { kind: near.how, label: intent.value, used: near.used });
+      return wideNearMiss(intent);
+    });
+  }
+
+  /* Head noun only — the last word of the phrase, which for dish
+     names is almost always the dish ("...  biryani", "... masala"). */
+  function wideNearMiss(intent) {
+    var words = intent.value.split(' ').filter(function (w) { return w.length > 2; });
+    if (words.length < 2) return { type: 'none', intent: intent };
+    var head = words[words.length - 1];
+    return SPN.search({ q: head }).then(function (hits) {
+      if (!hits.length) return { type: 'none', intent: intent };
+      return pick(hits, { kind: 'closest', label: intent.value, used: head });
     });
   }
 
@@ -78,9 +99,22 @@
             : null;
         });
     }
-    return SPN.search({ q: intent.label }).then(function (hits) {
-      return hits.length ? pick(hits, { kind: 'wider', label: intent.label }) : null;
-    });
+    /* Search the demonym alone, never intent.label — the label reads
+       "Pakistani dishes", and since the query ANDs its words that
+       would demand both in one title. A two-word demonym has the
+       same problem ("Sri Lankan"), so fall back to its last word,
+       which is the distinctive half. */
+    var words = String(intent.adj || '').split(' ');
+    return SPN.search({ q: intent.adj, cat: intent.cat })
+      .then(function (hits) {
+        if (hits.length || words.length < 2) return hits;
+        return SPN.search({ q: words[words.length - 1], cat: intent.cat });
+      })
+      .then(function (hits) {
+        return hits.length
+          ? pick(hits, { kind: 'widerarea', adj: intent.adj, label: intent.label })
+          : null;
+      });
   }
 
   function byArea(intent) {

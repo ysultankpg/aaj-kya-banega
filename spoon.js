@@ -12,16 +12,25 @@
   var cfg = window.RecipeConfig || {};
   var PROXY = String(cfg.proxy || '').replace(/\/+$/, '');
 
-  /* Once the daily quota is gone, stop asking for the rest of the
-     session — every further call would just cost a round trip to
-     learn the same thing. */
-  var exhausted = false;
+  /* Latched off for the rest of the session once the wider index is
+     known to be unusable — quota gone (402) or the proxy misconfigured
+     (5xx). Either way every further call would pay a round trip to
+     learn the same thing, so fall back to TheMealDB and stay there. */
+  var off = false;
 
-  function enabled() { return !!PROXY && !exhausted; }
+  function enabled() { return !!PROXY && !off; }
 
   function get(path) {
     return fetch(PROXY + path).then(function (r) {
-      if (r.status === 402) { exhausted = true; throw new Error('quota'); }
+      if (r.status === 402) { off = true; throw new Error('quota reached'); }
+      if (r.status >= 500) {
+        off = true;
+        /* Surface the Worker's own message — it distinguishes a bad API
+           key from a genuine outage, which matters when setting up. */
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          throw new Error(d.error || 'proxy error ' + r.status);
+        });
+      }
       if (!r.ok) throw new Error('spoon ' + r.status);
       return r.json();
     });
@@ -56,11 +65,17 @@
 
     return get('/search?' + p.join('&'))
       .then(function (d) { return (d.results || []).map(brief); })
-      .catch(function () { return []; });
+      .catch(function (e) {
+        /* Never propagate: the wider index is a bonus, never a reason
+           for the app to fail. Logged once so a misconfigured key is
+           findable in the console instead of silently invisible. */
+        if (window.console) console.warn('Wider recipe index unavailable:', e.message);
+        return [];
+      });
   }
 
-  /* --- One recipe by id ------------------------------------- */
-  /* Accepts either "spn:716429" or a bare id. */
+  /* --- One recipe by id -------------------------------------
+     Accepts either "spn:716429" or a bare id. */
   function byId(id) {
     if (!PROXY) return Promise.reject(new Error('no proxy configured'));
     var raw = String(id).replace(/^spn:/, '');
